@@ -28,6 +28,7 @@ function labelBox(text, px) {
 
 export const COLORS = {
   line: "#5a6b78",
+  riverLine: "#2f86d6",
   townFill: "#ffffff",
   riverFill: "#d6ebfa",
   disabled: "#d9dde1",
@@ -42,8 +43,8 @@ export const COLORS = {
 export function baseStyle(feature) {
   const river = feature.properties.kind === "river";
   return {
-    color: river ? "#7fb2d9" : COLORS.line,
-    weight: 1,
+    color: river ? COLORS.riverLine : COLORS.line,
+    weight: river ? 1.5 : 1,
     fillColor: river ? COLORS.riverFill : COLORS.townFill,
     fillOpacity: 1,
   };
@@ -99,11 +100,11 @@ export function createMap(el, data) {
   map.setMaxBounds(bounds.pad(0.4));
   map.fitBounds(bounds);
 
-  // 町名の境界線が川に隠れないよう、川を一番奥に描く(線は表示位置が決まってから作られるので、その後で並べ替える)
-  for (const { feature, layer: lyr } of regions.values()) {
-    if (feature.properties.kind === "river") lyr.bringToBack();
-  }
-  // 川の中を通る町名の境界線(川を切り抜いたときに消える部分)を、川の上に重ねる
+  // 川岸の線を川の色で見せるため、川は町名より手前に描く(線は表示位置が決まってから作られるので、その後で並べ替える)
+  const riverLayers = [...regions.values()].filter((e) => e.feature.properties.kind === "river").map((e) => e.layer);
+  const riversToFront = () => { for (const lyr of riverLayers) lyr.bringToFront(); };
+  riversToFront();
+  // 川の中を通る町名の境界線(川を切り抜いたときに消える部分)は、川よりさらに手前に重ねる
   L.geoJSON(data.riverCrossings, {
     pane: "crossings", interactive: false, style: { color: COLORS.line, weight: 1 },
   }).addTo(map);
@@ -174,9 +175,10 @@ export function createMap(el, data) {
     style(id, style) {
       regions.get(id).layer.setStyle(style);
     },
-    // 境界線が隣の領域の線に隠れないよう、前面に描く
+    // 境界線が隣の領域の線に隠れないよう、前面に描く。川岸の線は川の色のままにするため、川はその手前に戻す
     front(id) {
       regions.get(id).layer.bringToFront();
+      riversToFront();
     },
     resetStyles(fn = baseStyle) {
       for (const { feature, layer: lyr } of regions.values()) lyr.setStyle(fn(feature));
