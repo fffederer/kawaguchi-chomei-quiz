@@ -1,8 +1,30 @@
 // Leaflet で領域・ラベル・目印を描き、各モードから使う操作をまとめる。
 /* global L */
 
-const LABEL_FONT_PX = 12;
 const STATION_LABEL_MIN_ZOOM = 13.5;
+const LABEL_GAP_PX = 2;          // ラベル同士の最小のすき間
+const LABEL_MIN_REGION_PX = 3;   // 画面上の内接円半径がこれ未満の領域にはラベルを出さない
+
+// ズームアウトするほど文字を小さくして、多くのラベルが入るようにする
+function labelFontPx(zoom) {
+  if (zoom < 12.5) return 10;
+  if (zoom < 13.5) return 11;
+  return 12;
+}
+
+// 「大字◯◯」は「大字」を小さく1行目に置き、横幅を詰める
+function labelHtml(text) {
+  return text.startsWith("大字") && text.length > 2
+    ? `<span><small>大字</small>${text.slice(2)}</span>`
+    : `<span>${text}</span>`;
+}
+
+// ラベルの画面上の大きさの見積もり(px)。和文は1文字がほぼ正方形
+function labelBox(text, px) {
+  const oaza = text.startsWith("大字") && text.length > 2;
+  const chars = [...(oaza ? text.slice(2) : text)].length;
+  return { w: chars * px, h: px * 1.2 + (oaza ? px * 0.75 : 0) };
+}
 
 export const COLORS = {
   line: "#5a6b78",
@@ -61,7 +83,7 @@ export function createMap(el, data) {
         pane: "labels",
         interactive: false,
         keyboard: false,
-        icon: L.divIcon({ className: `region-label ${p.kind}`, html: `<span>${p.name}</span>`, iconSize: null }),
+        icon: L.divIcon({ className: `region-label ${p.kind}`, html: labelHtml(p.name), iconSize: null }),
       });
       regions.set(p.id, { feature, layer: lyr, label, wantLabel: false, labelText: p.name, labelClass: "" });
       lyr.on("click", (e) => {
@@ -98,15 +120,30 @@ export function createMap(el, data) {
     }
   }
 
-  function labelFits(entry) {
-    const r = entry.feature.properties.labelRadius / metersPerPixel(map);
-    const textWidth = [...entry.labelText].length * LABEL_FONT_PX;
-    return r >= 7 && r * 2 >= textWidth * 0.8;
-  }
-
+  // ラベルは領域からはみ出してよいが、ラベル同士は重ねない。
+  // 答え合わせのラベルを最優先にし、残りは面積の大きい領域から順に置いていく
   function refreshLabels() {
+    const px = labelFontPx(map.getZoom());
+    el.style.setProperty("--label-px", `${px}px`);
+    const mpp = metersPerPixel(map);
+    const candidates = [...regions.values()]
+      .filter((e) => e.wantLabel)
+      .sort((a, b) => (b.forceLabel - a.forceLabel) || (b.feature.properties.area - a.feature.properties.area));
+    const placed = [];
+    const visible = new Set();
+    for (const entry of candidates) {
+      const p = entry.feature.properties;
+      if (!entry.forceLabel && p.labelRadius / mpp < LABEL_MIN_REGION_PX) continue;
+      const c = map.latLngToContainerPoint([p.label[1], p.label[0]]);
+      const { w, h } = labelBox(entry.labelText, px);
+      const box = { l: c.x - w / 2 - LABEL_GAP_PX, r: c.x + w / 2 + LABEL_GAP_PX, t: c.y - h / 2 - LABEL_GAP_PX, b: c.y + h / 2 + LABEL_GAP_PX };
+      const hit = placed.some((o) => box.l < o.r && o.l < box.r && box.t < o.b && o.t < box.b);
+      if (hit && !entry.forceLabel) continue;
+      placed.push(box);
+      visible.add(entry);
+    }
     for (const entry of regions.values()) {
-      const show = entry.wantLabel && (entry.forceLabel || labelFits(entry));
+      const show = visible.has(entry);
       if (show && !map.hasLayer(entry.label)) entry.label.addTo(map);
       if (!show && map.hasLayer(entry.label)) entry.label.remove();
     }
@@ -144,7 +181,7 @@ export function createMap(el, data) {
         entry.labelText = newText;
         entry.labelClass = cls;
         entry.label.setIcon(L.divIcon({
-          className: `region-label ${entry.feature.properties.kind} ${cls}`, html: `<span>${newText}</span>`, iconSize: null,
+          className: `region-label ${entry.feature.properties.kind} ${cls}`, html: labelHtml(newText), iconSize: null,
         }));
       }
       refreshLabels();

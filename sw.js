@@ -1,7 +1,7 @@
 // アプリの全ファイルを端末に保存し、オフラインでも動くようにする。
 // ファイルを更新したら VERSION を上げる(古いキャッシュが消え、新しいファイルが保存される)。
 
-const VERSION = "v4";
+const VERSION = "v5";
 const CACHE = `kawaguchi-chomei-quiz-${VERSION}`;
 const FILES = [
   "./",
