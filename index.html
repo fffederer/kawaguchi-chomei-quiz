@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#1f5f8b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="川口町名">
+  <title>川口市町名クイズ</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- メニュー -->
+  <section id="screen-menu" class="screen page">
+    <h1>川口市町名クイズ</h1>
+    <nav class="menu">
+      <button data-go="learn">学習モード<small>タップして町名を覚える</small></button>
+      <button data-go="stages">ステージ<small>地区ごとに全問正解をめざす</small></button>
+      <button data-go="review" id="menu-review">復習<small>苦手な町名だけを出題</small></button>
+      <button data-go="mastery">習熟度マップ<small>覚え具合とクリア印</small></button>
+      <button data-go="settings">設定</button>
+    </nav>
+  </section>
+
+  <!-- ステージ一覧 -->
+  <section id="screen-stages" class="screen page" hidden>
+    <header class="bar"><button class="back" data-go="menu">‹ メニュー</button><h2>ステージ</h2></header>
+    <ul id="stage-list" class="cards"></ul>
+  </section>
+
+  <!-- 地図を使う画面(学習モード・クイズモード・習熟度マップ) -->
+  <section id="screen-map" class="screen" hidden>
+    <header class="bar map-bar">
+      <button class="back" id="map-back">‹ メニュー</button>
+      <h2 id="map-title"></h2>
+      <span id="map-progress"></span>
+    </header>
+    <div id="quiz-prompt" hidden></div>
+    <div id="map"></div>
+    <div id="map-legend" hidden></div>
+    <footer id="map-footer" class="map-footer"></footer>
+  </section>
+
+  <!-- 結果画面 -->
+  <section id="screen-result" class="screen page" hidden>
+    <header class="bar"><h2>結果</h2></header>
+    <div id="result-body"></div>
+    <nav class="menu">
+      <button id="result-retry">もう一度</button>
+      <button data-go="menu">メニューへ</button>
+    </nav>
+  </section>
+
+  <!-- 設定 -->
+  <section id="screen-settings" class="screen page" hidden>
+    <header class="bar"><button class="back" data-go="menu">‹ メニュー</button><h2>設定</h2></header>
+    <h3>目印</h3>
+    <label class="toggle"><input type="checkbox" id="set-rail"> 鉄道と駅</label>
+    <label class="toggle"><input type="checkbox" id="set-road"> 高速道路</label>
+    <h3>習熟度リセット</h3>
+    <p class="note">記録した習熟度を未学習に戻します。対象の地区のクリア印も消えます。</p>
+    <div class="reset-row">
+      <select id="reset-target"></select>
+      <button id="reset-run" class="danger">リセット</button>
+    </div>
+    <h3>データの出典</h3>
+    <p class="note">
+      町名の境界: 政府統計の総合窓口(e-Stat)「令和2年国勢調査 小地域(町丁・字等)境界データ」を加工して作成。
+      2020年以降の町名変更(前川町三・四丁目など)は反映していません。<br>
+      地区の区分: 川口市統計月報(令和8年7月)第5表をもとに作成。<br>
+      川・鉄道・駅・高速道路: © OpenStreetMap contributors(ODbL)<br>
+      地図表示: Leaflet
+    </p>
+  </section>
+
+  <div id="dialog" class="dialog" hidden>
+    <div class="dialog-box">
+      <p id="dialog-text"></p>
+      <div class="dialog-buttons">
+        <button id="dialog-cancel">キャンセル</button>
+        <button id="dialog-ok" class="danger">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
