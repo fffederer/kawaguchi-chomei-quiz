@@ -67,6 +67,8 @@ export function createMap(el, data) {
   });
   L.control.zoom({ position: "bottomright", zoomInTitle: "拡大", zoomOutTitle: "縮小" }).addTo(map);
 
+  map.createPane("crossings").style.zIndex = 410;
+  map.getPane("crossings").style.pointerEvents = "none";
   map.createPane("landmarks").style.zIndex = 450;
   map.getPane("landmarks").style.pointerEvents = "none";
   map.createPane("labels").style.zIndex = 650;
@@ -101,6 +103,10 @@ export function createMap(el, data) {
   for (const { feature, layer: lyr } of regions.values()) {
     if (feature.properties.kind === "river") lyr.bringToBack();
   }
+  // 川の中を通る町名の境界線(川を切り抜いたときに消える部分)を、川の上に重ねる
+  L.geoJSON(data.riverCrossings, {
+    pane: "crossings", interactive: false, style: { color: COLORS.line, weight: 1 },
+  }).addTo(map);
 
   // 目印
   const rail = L.layerGroup();
