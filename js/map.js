@@ -97,6 +97,11 @@ export function createMap(el, data) {
   map.setMaxBounds(bounds.pad(0.4));
   map.fitBounds(bounds);
 
+  // 町名の境界線が川に隠れないよう、川を一番奥に描く(線は表示位置が決まってから作られるので、その後で並べ替える)
+  for (const { feature, layer: lyr } of regions.values()) {
+    if (feature.properties.kind === "river") lyr.bringToBack();
+  }
+
   // 目印
   const rail = L.layerGroup();
   const road = L.layerGroup();
